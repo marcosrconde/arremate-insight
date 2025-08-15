@@ -44,7 +44,7 @@ export const AnalysisForm = ({ onAnalysisCreated }: AnalysisFormProps) => {
         .insert({
           user_id: user.id,
           property_id: formData.get('id_imovel') as string,
-          lote_number: formData.get('lote') as string,
+          analysis_name: formData.get('analysis_name') as string,
           analysis_type: 'links',
           status: 'processing',
           url_matricula: formData.get('url_matricula') as string,
@@ -71,7 +71,7 @@ export const AnalysisForm = ({ onAnalysisCreated }: AnalysisFormProps) => {
         url_edital: formData.get('url_edital'),
         link_pag: formData.get('link_pag'),
         id_imovel: formData.get('id_imovel'),
-        lote: formData.get('lote'),
+        analysis_name: formData.get('analysis_name'),
         opcao: 'links',
         analysis_id: analysisData.id,
         user_id: user.id
@@ -101,20 +101,8 @@ export const AnalysisForm = ({ onAnalysisCreated }: AnalysisFormProps) => {
         })
         .eq('id', analysisData.id);
 
-      // Process and store detailed results
-      if (responseData && responseData.length > 0) {
-        const result = responseData[0];
-        await supabase
-          .from('analysis_results')
-          .insert({
-            analysis_id: analysisData.id,
-            matricula_data: result.matricula,
-            edital_data: result.edital,
-            financial_data: result.financeiro,
-            juridico_data: result.juridico,
-            raw_response: responseData
-          });
-      }
+      // The analysis_results table is no longer used.
+      // The data is now sourced directly from the webhook_response column.
 
       await refreshProfile();
       onAnalysisCreated(analysisData.id);
@@ -195,21 +183,21 @@ export const AnalysisForm = ({ onAnalysisCreated }: AnalysisFormProps) => {
               <form onSubmit={handleLinksSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="id_imovel">ID do Imóvel *</Label>
+                    <Label htmlFor="analysis_name">Nome da Análise *</Label>
                     <Input
-                      id="id_imovel"
-                      name="id_imovel"
-                      placeholder="10145076"
+                      id="analysis_name"
+                      name="analysis_name"
+                      placeholder="Ex: Imóvel em Copacabana"
                       required
                       disabled={isLoading}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="lote">Número do Lote</Label>
+                    <Label htmlFor="id_imovel">ID do Imóvel</Label>
                     <Input
-                      id="lote"
-                      name="lote"
-                      placeholder="20"
+                      id="id_imovel"
+                      name="id_imovel"
+                      placeholder="10145076"
                       disabled={isLoading}
                     />
                   </div>
@@ -282,21 +270,21 @@ export const AnalysisForm = ({ onAnalysisCreated }: AnalysisFormProps) => {
               <form onSubmit={handleUploadSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="upload_id_imovel">ID do Imóvel *</Label>
+                    <Label htmlFor="upload_analysis_name">Nome da Análise *</Label>
                     <Input
-                      id="upload_id_imovel"
-                      name="id_imovel"
-                      placeholder="10145076"
+                      id="upload_analysis_name"
+                      name="analysis_name"
+                      placeholder="Ex: Imóvel em Copacabana"
                       required
                       disabled={isLoading}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="upload_lote">Número do Lote</Label>
+                    <Label htmlFor="upload_id_imovel">ID do Imóvel</Label>
                     <Input
-                      id="upload_lote"
-                      name="lote"
-                      placeholder="20"
+                      id="upload_id_imovel"
+                      name="id_imovel"
+                      placeholder="10145076"
                       disabled={isLoading}
                     />
                   </div>

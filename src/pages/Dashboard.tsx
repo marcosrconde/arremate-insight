@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { DashboardSidebar } from '@/components/DashboardSidebar';
 import { AnalysisForm } from '@/components/AnalysisForm';
 import { AnalysisReport } from '@/components/AnalysisReport';
-import { SidebarProvider } from '@/components/ui/sidebar';
+import { SidebarProvider, useSidebar } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { LogOut, Plus } from 'lucide-react';
@@ -14,6 +14,7 @@ import { toast } from '@/hooks/use-toast';
 interface Analysis {
   id: string;
   property_id: string;
+  analysis_name: string | null;
   lote_number: string | null;
   analysis_type: string;
   status: string;
@@ -21,7 +22,7 @@ interface Analysis {
   credits_used: number;
 }
 
-const Dashboard = () => {
+const DashboardContent = () => {
   const { user, signOut, profile, loading: authLoading } = useAuth();
   const [analyses, setAnalyses] = useState<Analysis[]>([]);
   const [selectedAnalysis, setSelectedAnalysis] = useState<string | null>(null);
@@ -40,7 +41,7 @@ const Dashboard = () => {
     try {
       const { data, error } = await supabase
         .from('analyses')
-        .select('*')
+        .select('id, property_id, analysis_name, lote_number, analysis_type, status, created_at, credits_used')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
@@ -83,6 +84,43 @@ const Dashboard = () => {
     setShowNewAnalysis(false);
   };
 
+  const handleAnalysisDeleted = async (analysisId: string) => {
+    try {
+      const { error } = await supabase
+        .from('analyses')
+        .delete()
+        .eq('id', analysisId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Análise excluída",
+        description: "A análise foi excluída com sucesso.",
+      });
+
+      // Refetch analyses and handle selection
+      const newAnalyses = analyses.filter(a => a.id !== analysisId);
+      setAnalyses(newAnalyses);
+
+      if (selectedAnalysis === analysisId) {
+        if (newAnalyses.length > 0) {
+          setSelectedAnalysis(newAnalyses[0].id);
+        } else {
+          setSelectedAnalysis(null);
+          setShowNewAnalysis(true); // Or show empty state
+        }
+      }
+
+    } catch (error: any) {
+      console.error('Error deleting analysis:', error);
+      toast({
+        variant: "destructive",
+        title: "Erro ao excluir",
+        description: error.message || "Não foi possível excluir a análise.",
+      });
+    }
+  };
+
   const handleSignOut = async () => {
     await signOut();
   };
@@ -103,15 +141,17 @@ const Dashboard = () => {
   if (!user) {
     return <Navigate to="/auth" replace />;
   }
+  const { state: sidebarState } = useSidebar();
+  const collapsed = sidebarState === "collapsed";
 
   return (
-    <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-background">
+      <div className="min-h-screen w-full bg-background flex">
         <DashboardSidebar
           analyses={analyses}
           selectedAnalysis={selectedAnalysis}
           onAnalysisSelected={handleAnalysisSelected}
           onNewAnalysis={handleNewAnalysis}
+          onAnalysisDeleted={handleAnalysisDeleted}
         />
 
         <div className="flex-1 flex flex-col">
@@ -174,8 +214,13 @@ const Dashboard = () => {
           </main>
         </div>
       </div>
-    </SidebarProvider>
   );
-};
+}
+
+const Dashboard = () => (
+  <SidebarProvider style={{ "--sidebar-width": "18rem", "--sidebar-width-icon": "4rem" } as React.CSSProperties}>
+    <DashboardContent />
+  </SidebarProvider>
+);
 
 export default Dashboard;

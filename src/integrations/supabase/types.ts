@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       analyses: {
         Row: {
+          analysis_name: string | null
           analysis_type: string
           created_at: string
           credits_used: number
@@ -34,6 +35,7 @@ export type Database = {
           webhook_response: Json | null
         }
         Insert: {
+          analysis_name?: string | null
           analysis_type: string
           created_at?: string
           credits_used?: number
@@ -52,6 +54,7 @@ export type Database = {
           webhook_response?: Json | null
         }
         Update: {
+          analysis_name?: string | null
           analysis_type?: string
           created_at?: string
           credits_used?: number
@@ -70,47 +73,6 @@ export type Database = {
           webhook_response?: Json | null
         }
         Relationships: []
-      }
-      analysis_results: {
-        Row: {
-          analysis_id: string
-          created_at: string
-          edital_data: Json | null
-          financial_data: Json | null
-          id: string
-          juridico_data: Json | null
-          matricula_data: Json | null
-          raw_response: Json | null
-        }
-        Insert: {
-          analysis_id: string
-          created_at?: string
-          edital_data?: Json | null
-          financial_data?: Json | null
-          id?: string
-          juridico_data?: Json | null
-          matricula_data?: Json | null
-          raw_response?: Json | null
-        }
-        Update: {
-          analysis_id?: string
-          created_at?: string
-          edital_data?: Json | null
-          financial_data?: Json | null
-          id?: string
-          juridico_data?: Json | null
-          matricula_data?: Json | null
-          raw_response?: Json | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "analysis_results_analysis_id_fkey"
-            columns: ["analysis_id"]
-            isOneToOne: true
-            referencedRelation: "analyses"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       profiles: {
         Row: {

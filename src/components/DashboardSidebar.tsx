@@ -6,8 +6,20 @@ import {
   CheckCircle, 
   XCircle,
   Plus,
-  Calendar
+  Calendar,
+  Trash2
 } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import {
   Sidebar,
   SidebarContent,
@@ -27,6 +39,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 interface Analysis {
   id: string;
   property_id: string;
+  analysis_name: string | null;
   lote_number: string | null;
   analysis_type: string;
   status: string;
@@ -39,6 +52,7 @@ interface DashboardSidebarProps {
   selectedAnalysis: string | null;
   onAnalysisSelected: (analysisId: string) => void;
   onNewAnalysis: () => void;
+  onAnalysisDeleted: (analysisId: string) => void;
 }
 
 const getStatusIcon = (status: string) => {
@@ -87,8 +101,6 @@ const formatDate = (dateString: string) => {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
   });
 };
 
@@ -96,13 +108,14 @@ export const DashboardSidebar = ({
   analyses, 
   selectedAnalysis, 
   onAnalysisSelected, 
-  onNewAnalysis 
+  onNewAnalysis,
+  onAnalysisDeleted
 }: DashboardSidebarProps) => {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
 
   return (
-    <Sidebar className={collapsed ? "w-16" : "w-80"} collapsible="icon">
+    <Sidebar className={`${collapsed ? "w-16" : "w-72"} no-print`} collapsible="icon">
       <SidebarHeader className="border-b border-sidebar-border p-4">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
@@ -152,47 +165,62 @@ export const DashboardSidebar = ({
                     <SidebarMenuItem key={analysis.id}>
                       <SidebarMenuButton
                         onClick={() => onAnalysisSelected(analysis.id)}
-                        className={`w-full p-3 text-left hover:bg-sidebar-accent transition-colors ${
+                        className={`w-full h-auto p-3 text-left hover:bg-sidebar-accent transition-colors ${
                           selectedAnalysis === analysis.id
                             ? 'bg-sidebar-accent text-sidebar-accent-foreground border-l-4 border-l-sidebar-primary'
                             : 'text-sidebar-foreground'
                         }`}
                       >
                         <div className="flex items-start gap-3 w-full">
-                          {getStatusIcon(analysis.status)}
-                          
-                          {!collapsed && (
+                          {collapsed ? getStatusIcon(analysis.status) : (
                             <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-1">
-                                <span className="font-medium text-sm truncate">
-                                  ID: {analysis.property_id}
+                              <div className="flex items-center justify-between mb-1">
+                                <span className="font-medium text-sm whitespace-normal break-words pr-2">
+                                  {analysis.analysis_name || `ID: ${analysis.property_id}`}
                                 </span>
-                                {analysis.lote_number && (
-                                  <Badge variant="outline" className="text-xs px-1 py-0">
-                                    Lote {analysis.lote_number}
-                                  </Badge>
-                                )}
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-6 w-6 shrink-0"
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      <Trash2 className="w-4 h-4 text-destructive/70 hover:text-destructive" />
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        Esta ação não pode ser desfeita. Isso excluirá permanentemente a
+                                        análise e seus dados.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                      <AlertDialogAction
+                                        onClick={() => onAnalysisDeleted(analysis.id)}
+                                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                      >
+                                        Excluir
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
                               </div>
                               
-                              <div className="flex items-center gap-2 mb-2">
+                              <div className="flex items-center gap-2 text-xs text-sidebar-foreground/70">
                                 <Badge 
                                   variant="outline" 
                                   className={`text-xs ${getStatusColor(analysis.status)}`}
                                 >
                                   {getStatusLabel(analysis.status)}
                                 </Badge>
-                                <Badge variant="secondary" className="text-xs">
-                                  {analysis.analysis_type === 'links' ? 'Links' : 'Upload'}
-                                </Badge>
-                              </div>
-                              
-                              <div className="flex items-center gap-1 text-xs text-sidebar-foreground/70">
-                                <Calendar className="w-3 h-3" />
-                                <span>{formatDate(analysis.created_at)}</span>
-                              </div>
-                              
-                              <div className="text-xs text-sidebar-foreground/70 mt-1">
-                                {analysis.credits_used} crédito{analysis.credits_used !== 1 ? 's' : ''}
+                                <div className="flex items-center gap-1">
+                                  <Calendar className="w-3 h-3" />
+                                  <span>{formatDate(analysis.created_at)}</span>
+                                </div>
                               </div>
                             </div>
                           )}
