@@ -1,4 +1,5 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -16,7 +17,10 @@ import {
   Scale,
   ShieldAlert,
   Info,
-  Camera
+  Camera,
+  Store,
+  Sparkles,
+  Map
 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
@@ -72,7 +76,10 @@ export const ReportContent = ({ analysis }: ReportContentProps) => {
   const edital = result?.edital;
   const financeiro = result?.financeiro;
   const juridico = result?.juridico;
-  const fotos_imovel = result?.fotos_imovel;
+  const amenidades = result?.amenidades;
+  const valor_mercado = result?.valor_mercado;
+  const valor_sugerido = result?.valor_sugerido;
+  const resumo_bairro = result?.resumo_bairro;
 
   return (
     <div className="space-y-6">
@@ -125,12 +132,15 @@ export const ReportContent = ({ analysis }: ReportContentProps) => {
         </Alert>
       ) : (
         <Tabs defaultValue="resumo" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5 no-print">
+          <TabsList className="grid w-full grid-cols-8 no-print">
             <TabsTrigger value="resumo">Resumo</TabsTrigger>
             <TabsTrigger value="matricula">Matrícula</TabsTrigger>
             <TabsTrigger value="edital">Edital</TabsTrigger>
             <TabsTrigger value="financeiro">Financeiro</TabsTrigger>
             <TabsTrigger value="juridico">Jurídico</TabsTrigger>
+            <TabsTrigger value="mercado">Valor de Mercado</TabsTrigger>
+            <TabsTrigger value="bairro">Bairro</TabsTrigger>
+            <TabsTrigger value="amenidades">Amenidades</TabsTrigger>
           </TabsList>
 
           {/* Resumo */}
@@ -165,6 +175,25 @@ export const ReportContent = ({ analysis }: ReportContentProps) => {
                         <p className="text-sm text-muted-foreground">ROI Financiado</p>
                       </div>
                     </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {valor_sugerido && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <DollarSign className="w-5 h-5 text-primary" />
+                      Valor Sugerido de Venda
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-3xl font-bold text-center text-primary">
+                      {formatCurrency(valor_sugerido)}
+                    </p>
+                    <p className="text-sm text-muted-foreground text-center mt-1">
+                      Baseado em análise de mercado e dados do imóvel.
+                    </p>
                   </CardContent>
                 </Card>
               )}
@@ -291,25 +320,6 @@ export const ReportContent = ({ analysis }: ReportContentProps) => {
                 </Card>
               )}
 
-              {fotos_imovel && fotos_imovel.length > 0 && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Camera className="w-5 h-5 text-primary" />
-                      Fotos do Imóvel
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                      {fotos_imovel.map((foto: string, index: number) => (
-                        <a href={foto} target="_blank" rel="noopener noreferrer" key={index}>
-                          <img src={foto} alt={`Foto do imóvel ${index + 1}`} className="rounded-lg object-cover aspect-square" />
-                        </a>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
             </div>
           </TabsContent>
 
@@ -454,47 +464,51 @@ export const ReportContent = ({ analysis }: ReportContentProps) => {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-4">
-                      {financeiro.cenarios.slice(0, 6).map((cenario: any, index: number) => (
-                        <Card key={index} className="p-4">
-                          <div className="flex justify-between items-start mb-3">
-                            <div>
-                              <h4 className="font-semibold">{cenario.cenario}</h4>
-                              <Badge variant="outline" className="mt-1">
-                                {cenario.tipo}
-                              </Badge>
-                            </div>
-                            <div className="text-right">
-                              <p className="text-lg font-bold text-success">
-                                ROI: {cenario.roi}%
-                              </p>
-                              <p className="text-sm text-muted-foreground">
-                                Lucro: {formatCurrency(cenario.lucroLiquido)}
-                              </p>
-                            </div>
-                          </div>
-                          
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                            <div>
-                              <span className="text-muted-foreground">Arrematação:</span>
-                              <p className="font-medium">{formatCurrency(cenario.valorArrematacao)}</p>
-                            </div>
-                            <div>
-                              <span className="text-muted-foreground">Custo Total:</span>
-                              <p className="font-medium">{formatCurrency(cenario.custoTotal || cenario.custoTotalEfetivo)}</p>
-                            </div>
-                            <div>
-                              <span className="text-muted-foreground">Receita:</span>
-                              <p className="font-medium">{formatCurrency(cenario.receita)}</p>
-                            </div>
-                            <div>
-                              <span className="text-muted-foreground">Imposto:</span>
-                              <p className="font-medium">{formatCurrency(cenario.impostoRenda)}</p>
-                            </div>
-                          </div>
-                        </Card>
-                      ))}
-                    </div>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Cenário</TableHead>
+                          <TableHead>Tipo</TableHead>
+                          <TableHead>Arrematação</TableHead>
+                          <TableHead>Custo Total</TableHead>
+                          <TableHead>Lucro Líquido</TableHead>
+                          <TableHead>ROI</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {financeiro.cenarios
+                          .slice() // Create a shallow copy to avoid mutating the original array
+                          .sort((a: any, b: any) => {
+                            if (a.tipo === 'À vista' && b.tipo !== 'À vista') {
+                              return -1;
+                            }
+                            if (a.tipo !== 'À vista' && b.tipo === 'À vista') {
+                              return 1;
+                            }
+                            return 0;
+                          })
+                          .map((cenario: any, index: number) => {
+                            const getRoiColorClass = (roi: number) => {
+                              if (roi < 20) return 'bg-red-100';
+                              if (roi >= 20 && roi < 35) return 'bg-yellow-100';
+                              return 'bg-green-100';
+                            };
+
+                            return (
+                            <TableRow key={index} className={getRoiColorClass(cenario.roi)}>
+                              <TableCell className="font-medium">{cenario.cenario}</TableCell>
+                              <TableCell>
+                                <Badge variant="outline">{cenario.tipo}</Badge>
+                              </TableCell>
+                              <TableCell>{formatCurrency(cenario.valorArrematacao)}</TableCell>
+                              <TableCell>{formatCurrency(cenario.custoTotal || cenario.custoTotalEfetivo)}</TableCell>
+                              <TableCell>{formatCurrency(cenario.lucroLiquido)}</TableCell>
+                              <TableCell className="font-bold text-success">{cenario.roi}%</TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
                   </CardContent>
                 </Card>
               </div>
@@ -551,6 +565,158 @@ export const ReportContent = ({ analysis }: ReportContentProps) => {
                 <AlertTriangle className="h-4 w-4" />
                 <AlertDescription>
                   Dados jurídicos não disponíveis.
+                </AlertDescription>
+              </Alert>
+            )}
+          </TabsContent>
+
+          {/* Valor de Mercado */}
+          <TabsContent value="mercado">
+            {valor_mercado ? (
+              <div className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <TrendingUp className="w-5 h-5 text-primary" />
+                      Análise de Valor de Mercado
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                      <div className="text-center p-4 bg-primary/10 rounded-lg">
+                        <p className="text-xl font-bold text-primary">{formatCurrency(valor_mercado.valor_min_m2)}</p>
+                        <p className="text-sm text-muted-foreground">Valor Mínimo m²</p>
+                      </div>
+                      <div className="text-center p-4 bg-primary/10 rounded-lg">
+                        <p className="text-xl font-bold text-primary">{formatCurrency(valor_mercado.valor_med_m2)}</p>
+                        <p className="text-sm text-muted-foreground">Valor Médio m²</p>
+                      </div>
+                      <div className="text-center p-4 bg-primary/10 rounded-lg">
+                        <p className="text-xl font-bold text-primary">{formatCurrency(valor_mercado.valor_max_m2)}</p>
+                        <p className="text-sm text-muted-foreground">Valor Máximo m²</p>
+                      </div>
+                    </div>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Tipo</TableHead>
+                          <TableHead>Área</TableHead>
+                          <TableHead>Preço</TableHead>
+                          <TableHead>Valor m²</TableHead>
+                          <TableHead>Link</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {valor_mercado.list.map((item: any, index: number) => (
+                          <TableRow key={index}>
+                            <TableCell>{item.tipo}</TableCell>
+                            <TableCell>{item.area_construida} m²</TableCell>
+                            <TableCell>{formatCurrency(item.preco)}</TableCell>
+                            <TableCell>{formatCurrency(item.valor_m2)}</TableCell>
+                            <TableCell>
+                              <a href={item.url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                                Ver
+                              </a>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </CardContent>
+                </Card>
+              </div>
+            ) : (
+              <Alert>
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription>
+                  Dados de valor de mercado não disponíveis.
+                </AlertDescription>
+              </Alert>
+            )}
+          </TabsContent>
+
+          {/* Bairro */}
+          <TabsContent value="bairro">
+            {resumo_bairro ? (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Map className="w-5 h-5 text-primary" />
+                    Resumo do Bairro
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="prose prose-sm max-w-none text-muted-foreground" dangerouslySetInnerHTML={{ __html: resumo_bairro.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br />') }} />
+                </CardContent>
+              </Card>
+            ) : (
+              <Alert>
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription>
+                  Resumo do bairro não disponível.
+                </AlertDescription>
+              </Alert>
+            )}
+          </TabsContent>
+
+          {/* Amenidades */}
+          <TabsContent value="amenidades">
+            {amenidades && amenidades.length > 0 ? (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Sparkles className="w-5 h-5 text-primary" />
+                    Amenidades Próximas
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <a
+                      href={`https://www.openstreetmap.org/#map=14/${amenidades[0].lat}/${amenidades[0].lon}&layers=N&markers=${amenidades.filter((item: any) => item.lat && item.lon).map((item: any) => `${item.lat},${item.lon}`).join(';')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary hover:underline"
+                    >
+                      Ver mapa de amenidades
+                    </a>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {amenidades
+                        .filter((item: any) => item.tags?.name)
+                        .map((item: any) => {
+                          const amenityType = item.tags?.amenity || item.tags?.shop || item.tags?.leisure || item.type;
+                          const translations: { [key: string]: string } = {
+                            school: 'escola',
+                            mall: 'shopping center',
+                            supermarket: 'supermercado',
+                            park: 'praça',
+                            hospital: 'hospital',
+                            pharmacy: 'farmácia',
+                          };
+                          const translatedType = translations[amenityType] || amenityType;
+
+                          return (
+                            <div key={item.id} className="p-3 bg-muted/50 rounded-lg flex items-start gap-3">
+                              <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
+                                <Store className="w-4 h-4 text-primary" />
+                              </div>
+                              <div>
+                                <p className="font-semibold text-sm">{item.tags.name}</p>
+                                <p className="text-xs text-muted-foreground capitalize">
+                                  {translatedType}
+                                </p>
+                              </div>
+                            </div>
+                          );
+                        })}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <Alert>
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription>
+                  Nenhuma amenidade encontrada nas proximidades.
                 </AlertDescription>
               </Alert>
             )}
