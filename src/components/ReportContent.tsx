@@ -1,6 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
@@ -58,6 +59,55 @@ const formatDate = (dateString: string) => {
     hour: '2-digit',
     minute: '2-digit'
   });
+};
+
+const ScenarioTooltipContent = ({ scenario }: { scenario: any }) => {
+  const isFinanciado = scenario.tipo === 'Financiado';
+
+  const renderDetail = (label: string, value: string | number | undefined) => {
+    if (value === undefined || value === null || (typeof value === 'number' && isNaN(value))) {
+      return null;
+    }
+    return (
+      <div className="flex justify-between py-1 text-xs">
+        <span className="text-muted-foreground">{label}</span>
+        <span className="font-medium">{value}</span>
+      </div>
+    );
+  };
+
+  return (
+    <div className="p-2 max-w-xs">
+      <h4 className="font-bold mb-2 text-sm">{scenario.cenario}</h4>
+      <Separator className="my-2" />
+      
+      <h5 className="font-semibold mt-3 mb-1 text-xs">Valores</h5>
+      {renderDetail('Lance', formatCurrency(scenario.valorArrematacao))}
+      {isFinanciado && renderDetail('Entrada', formatCurrency(scenario.entrada))}
+      {renderDetail('Documentação', formatCurrency(scenario.gastoDocumentacao))}
+      {renderDetail('Comissão Leiloeiro', formatCurrency(scenario.valorLeiloeiro))}
+      {renderDetail('Corretagem Venda', formatCurrency(scenario.corretagemVenda))}
+      {isFinanciado && renderDetail('Parcelas Pagas', formatCurrency(scenario.parcelasPagas))}
+      
+      <h5 className="font-semibold mt-3 mb-1 text-xs">Resultado</h5>
+      {renderDetail('Receita Venda', formatCurrency(scenario.receita))}
+      {renderDetail('Custo Total', formatCurrency(isFinanciado ? scenario.custoTotalEfetivo : scenario.custoTotal))}
+      {renderDetail('Lucro Bruto', formatCurrency(scenario.lucroBruto))}
+      {renderDetail('Imposto de Renda', formatCurrency(scenario.impostoRenda))}
+      {renderDetail('Lucro Líquido', formatCurrency(scenario.lucroLiquido))}
+      {renderDetail('ROI', `${scenario.roi}%`)}
+      
+      {isFinanciado && (
+        <>
+          <h5 className="font-semibold mt-3 mb-1 text-xs">Detalhes do Financiamento</h5>
+          {renderDetail('ROI Capital Próprio', `${scenario.roiCapitalProprio}%`)}
+          {renderDetail('Capital Próprio Empregado', formatCurrency(scenario.capitalProprioEmpregado))}
+          {renderDetail('Saldo Devedor', formatCurrency(scenario.saldoDevedor))}
+          {renderDetail('Parcela Mensal', formatCurrency(scenario.parcelaMensal))}
+        </>
+      )}
+    </div>
+  );
 };
 
 export const ReportContent = ({ analysis }: ReportContentProps) => {
@@ -460,57 +510,113 @@ export const ReportContent = ({ analysis }: ReportContentProps) => {
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <Calculator className="w-5 h-5 text-primary" />
-                      Cenários Financeiros
+                      Simulações à Vista
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Cenário</TableHead>
-                          <TableHead>Tipo</TableHead>
-                          <TableHead>Arrematação</TableHead>
-                          <TableHead>Custo Total</TableHead>
+                          <TableHead>Valor do Lance</TableHead>
+                          <TableHead>Documentação</TableHead>
+                          <TableHead>Outros Gastos</TableHead>
+                          <TableHead>Desembolso</TableHead>
                           <TableHead>Lucro Líquido</TableHead>
                           <TableHead>ROI</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {financeiro.cenarios
-                          .slice() // Create a shallow copy to avoid mutating the original array
-                          .sort((a: any, b: any) => {
-                            if (a.tipo === 'À vista' && b.tipo !== 'À vista') {
-                              return -1;
-                            }
-                            if (a.tipo !== 'À vista' && b.tipo === 'À vista') {
-                              return 1;
-                            }
-                            return 0;
-                          })
+                          .filter((c: any) => c.tipo === 'À vista')
                           .map((cenario: any, index: number) => {
                             const getRoiColorClass = (roi: number) => {
                               if (roi < 20) return 'bg-red-100';
                               if (roi >= 20 && roi < 35) return 'bg-yellow-100';
                               return 'bg-green-100';
                             };
+                            const outrosGastos = (cenario.percentualDividas / 100) * financeiro.resumo.valorAvaliacao;
 
                             return (
-                            <TableRow key={index} className={getRoiColorClass(cenario.roi)}>
-                              <TableCell className="font-medium">{cenario.cenario}</TableCell>
-                              <TableCell>
-                                <Badge variant="outline">{cenario.tipo}</Badge>
-                              </TableCell>
-                              <TableCell>{formatCurrency(cenario.valorArrematacao)}</TableCell>
-                              <TableCell>{formatCurrency(cenario.custoTotal || cenario.custoTotalEfetivo)}</TableCell>
-                              <TableCell>{formatCurrency(cenario.lucroLiquido)}</TableCell>
-                              <TableCell className="font-bold text-success">{cenario.roi}%</TableCell>
-                            </TableRow>
-                          );
-                        })}
+                              <TooltipProvider key={index}>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <TableRow className={getRoiColorClass(cenario.roi)}>
+                                      <TableCell>{formatCurrency(cenario.valorArrematacao)}</TableCell>
+                                      <TableCell>{formatCurrency(cenario.gastoDocumentacao)}</TableCell>
+                                      <TableCell>{formatCurrency(outrosGastos)}</TableCell>
+                                      <TableCell>{formatCurrency(cenario.custoTotal || cenario.custoTotalEfetivo)}</TableCell>
+                                      <TableCell>{formatCurrency(cenario.lucroLiquido)}</TableCell>
+                                      <TableCell className="font-bold text-success">{cenario.roi}%</TableCell>
+                                    </TableRow>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <ScenarioTooltipContent scenario={cenario} />
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            );
+                          })}
                       </TableBody>
                     </Table>
                   </CardContent>
                 </Card>
+
+                {financeiro.cenarios.some((c: any) => c.tipo === 'Financiado') && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Calculator className="w-5 h-5 text-primary" />
+                        Simulações Financiadas
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Valor do Lance</TableHead>
+                            <TableHead>Documentação</TableHead>
+                            <TableHead>Outros Gastos</TableHead>
+                            <TableHead>Desembolso</TableHead>
+                            <TableHead>Lucro Líquido</TableHead>
+                            <TableHead>ROI</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {financeiro.cenarios
+                            .filter((c: any) => c.tipo === 'Financiado')
+                            .map((cenario: any, index: number) => {
+                              const getRoiColorClass = (roi: number) => {
+                                if (roi < 20) return 'bg-red-100';
+                                if (roi >= 20 && roi < 35) return 'bg-yellow-100';
+                                return 'bg-green-100';
+                              };
+                              const outrosGastos = (cenario.percentualDividas / 100) * financeiro.resumo.valorAvaliacao;
+
+                              return (
+                                <TooltipProvider key={index}>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <TableRow className={getRoiColorClass(cenario.roi)}>
+                                        <TableCell>{formatCurrency(cenario.valorArrematacao)}</TableCell>
+                                        <TableCell>{formatCurrency(cenario.gastoDocumentacao)}</TableCell>
+                                        <TableCell>{formatCurrency(outrosGastos)}</TableCell>
+                                        <TableCell>{formatCurrency(cenario.capitalProprioEmpregado)}</TableCell>
+                                        <TableCell>{formatCurrency(cenario.lucroLiquido)}</TableCell>
+                                        <TableCell className="font-bold text-success">{cenario.roi}%</TableCell>
+                                      </TableRow>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <ScenarioTooltipContent scenario={cenario} />
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              );
+                            })}
+                        </TableBody>
+                      </Table>
+                    </CardContent>
+                  </Card>
+                )}
               </div>
             ) : (
               <Alert>
